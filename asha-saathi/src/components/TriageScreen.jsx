@@ -4,6 +4,7 @@ import { runTriage } from "../engine/triageEngine";
 import { rankQueue, createPatientRecord } from "../engine/priorityQueue";
 import { generateReferralReport } from "../engine/referralReport";
 import ReferralReport from "./ReferralReport";
+import VoiceInput from "./VoiceInput";
 
 const TIER_COLORS = {
   RED: "#d32f2f",
@@ -138,7 +139,7 @@ export default function TriageScreen() {
   return (
     <div style={{ padding: "24px" }}>
       <h1>ASHA Saathi — Select Observed Signs</h1>
-
+      <VoiceInput onTranscript={(text) => console.log("Transcript:", text)} />
       {queue.length > 0 && (
         <button onClick={() => setView("queue")} style={{ marginBottom: "16px", padding: "8px 16px" }}>
           View Queue ({queue.length})
