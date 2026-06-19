@@ -5,6 +5,7 @@ import { rankQueue, createPatientRecord } from "../engine/priorityQueue";
 import { generateReferralReport } from "../engine/referralReport";
 import ReferralReport from "./ReferralReport";
 import VoiceInput from "./VoiceInput";
+import { matchSymptoms } from "../engine/nlpMatcher";
 
 const TIER_COLORS = {
   RED: "#d32f2f",
@@ -139,7 +140,13 @@ export default function TriageScreen() {
   return (
     <div style={{ padding: "24px" }}>
       <h1>ASHA Saathi — Select Observed Signs</h1>
-      <VoiceInput onTranscript={(text) => console.log("Transcript:", text)} />
+        <VoiceInput onTranscript={(text) => {
+    console.log("Transcript:", text);
+    const matched = matchSymptoms(text);
+    if (matched.length > 0) {
+        setSelectedSigns((prev) => [...new Set([...prev, ...matched])]);
+    }
+    }} />
       {queue.length > 0 && (
         <button onClick={() => setView("queue")} style={{ marginBottom: "16px", padding: "8px 16px" }}>
           View Queue ({queue.length})
