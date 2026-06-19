@@ -1,39 +1,49 @@
 /**
- * Rule-based NLP matcher.
- * Maps transcribed speech keywords to IMNCI danger sign IDs.
- * Handles both romanized Hindi/Marathi and English terms.
+ * nlpMatcher.js — Multilingual symptom matcher
+ *
+ * Matches transcribed speech (in any supported language) to IMNCI danger sign IDs.
+ * Keywords from ALL languages are merged at runtime so a single matchSymptoms()
+ * call works regardless of which language Whisper transcribed in.
+ *
+ * To add a new sign keyword for any language, update languageConfig.js — not here.
  */
-const KEYWORD_MAP = [
-  { keywords: ["bukhar", "fever", "bukhaar", "tap", "tapp"], signId: "fever_no_stiff_neck" },
-  { keywords: ["saas", "saans", "breathing", "breath", "chest", "seena", "indrawing"], signId: "chest_indrawing" },
-  { keywords: ["tez saas", "fast breath", "tezi", "rapid"], signId: "fast_breathing" },
-  { keywords: ["ulti", "vomit", "sab ulti", "vomits everything"], signId: "vomits_everything" },
-  { keywords: ["dast", "loose", "diarrhea", "loose stool", "potty"], signId: "mild_diarrhea_no_dehydration" },
-  { keywords: ["fits", "seizure", "convulsion", "jhatkay", "jhatke"], signId: "convulsions" },
-  { keywords: ["behosh", "unconscious", "lethargic", "neend", "nahi uth"], signId: "lethargic_unconscious" },
-  { keywords: ["pi nahi", "drink nahi", "breastfeed", "dudh nahi", "pee nahi"], signId: "not_able_to_drink" },
-  { keywords: ["khoon", "blood", "stool mein khoon", "blood stool"], signId: "blood_in_stool" },
-  { keywords: ["gardan", "stiff neck", "gardan akad", "neck stiff"], signId: "high_fever_with_stiff_neck" },
-  { keywords: ["aankhein andar", "sunken eyes", "aankhein", "dehydration"], signId: "some_dehydration" },
-  { keywords: ["awaaz", "stridor", "noise breath", "noisy"], signId: "stridor" },
-  { keywords: ["kaan", "ear", "kan dard", "discharge"], signId: "ear_pain_discharge" },
-  { keywords: ["pale", "safed haath", "pallor", "anemia"], signId: "pallor" },
-  { keywords: ["wajan nahi", "thin", "wasting", "low weight", "kam wajan"], signId: "low_weight" },
-];
+import { LANGUAGES } from "./languageConfig";
 
 /**
- * @param {string} transcript - raw text from Whisper
- * @returns {string[]} array of matched danger sign IDs
+ * Build a merged keyword map from all languages.
+ * Structure: { signId: Set<string> }
+ */
+function buildMergedKeywordMap() {
+  const map = {};
+  for (const lang of Object.values(LANGUAGES)) {
+    for (const [signId, keywords] of Object.entries(lang.keywords)) {
+      if (!map[signId]) map[signId] = new Set();
+      for (const kw of keywords) {
+        map[signId].add(kw.toLowerCase());
+      }
+    }
+  }
+  return map;
+}
+
+// Built once at module load — no runtime cost per call
+const MERGED_KEYWORD_MAP = buildMergedKeywordMap();
+
+/**
+ * Match a transcript against all known symptom keywords across all languages.
+ * @param {string} transcript - raw text from Whisper (any language)
+ * @returns {string[]} array of matched IMNCI danger sign IDs
  */
 export function matchSymptoms(transcript) {
   if (!transcript) return [];
   const lower = transcript.toLowerCase();
   const matched = [];
 
-  for (const rule of KEYWORD_MAP) {
-    if (rule.keywords.some((kw) => lower.includes(kw))) {
-      if (!matched.includes(rule.signId)) {
-        matched.push(rule.signId);
+  for (const [signId, keywords] of Object.entries(MERGED_KEYWORD_MAP)) {
+    for (const kw of keywords) {
+      if (lower.includes(kw)) {
+        if (!matched.includes(signId)) matched.push(signId);
+        break; // one match per sign is enough
       }
     }
   }

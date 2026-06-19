@@ -1,10 +1,28 @@
 import { useState } from "react";
-import { DANGER_SIGNS } from "../engine/dangerSigns";
+import { getDangerSigns } from "../engine/dangerSigns";
 import VoiceInput from "./VoiceInput";
 import { matchSymptoms } from "../engine/nlpMatcher";
+import { getLang } from "../engine/languageConfig";
 
 const TIER_COLORS = { RED: "#ef4444", YELLOW: "#f59e0b", GREEN: "#22c55e" };
-const TIER_BG = { RED: "#450a0a", YELLOW: "#451a03", GREEN: "#052e16" };
+const TIER_BG     = { RED: "#450a0a", YELLOW: "#451a03", GREEN: "#052e16" };
+
+const CATEGORY_KEYS = [
+  "general", "respiratory", "dehydration", "fever",
+  "diarrhea", "nutrition", "ear", "infant",
+];
+
+// English category display names (fallback — ideally move these to languageConfig too)
+const CATEGORY_LABELS = {
+  general:     "General Danger Signs",
+  respiratory: "Breathing",
+  dehydration: "Dehydration",
+  fever:       "Fever",
+  diarrhea:    "Diarrhoea",
+  nutrition:   "Nutrition",
+  ear:         "Ear",
+  infant:      "Infant (0–12 months)",
+};
 
 const s = {
   page: { minHeight: "100vh", background: "#0a0f1e", paddingBottom: "100px" },
@@ -17,9 +35,6 @@ const s = {
     background: "none", border: "1px solid #374151", color: "#9ca3af",
     borderRadius: "8px", padding: "6px 12px", cursor: "pointer", fontSize: "14px",
   },
-  titleBlock: {},
-  title: { fontSize: "17px", fontWeight: "700", color: "#f9fafb" },
-  subtitle: { fontSize: "12px", color: "#6b7280" },
   body: { padding: "20px 24px" },
   selectedBar: {
     background: "#1f2937", borderRadius: "10px", padding: "10px 14px",
@@ -67,54 +82,50 @@ const s = {
   }),
 };
 
-const CATEGORIES = {
-  general: "General Danger Signs",
-  respiratory: "Breathing",
-  dehydration: "Dehydration",
-  fever: "Fever",
-  diarrhea: "Diarrhoea",
-  nutrition: "Nutrition",
-  ear: "Ear",
-  infant: "Infant (0–12 months)",
-};
-
-export default function ChecklistScreen({ onBack, onSubmit, showVoice = true }) {
+export default function ChecklistScreen({ langKey = "hi", onBack, onSubmit, showVoice = true }) {
   const [selected, setSelected] = useState([]);
+  const ui = getLang(langKey).ui;
+
+  // Get danger signs with labels in the correct language
+  const DANGER_SIGNS = getDangerSigns(langKey);
 
   function toggle(id) {
     setSelected((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
   }
 
-  const grouped = Object.entries(CATEGORIES).map(([cat, label]) => ({
-    label,
+  const grouped = CATEGORY_KEYS.map((cat) => ({
+    label: CATEGORY_LABELS[cat],
     signs: DANGER_SIGNS.filter((s) => s.category === cat),
   })).filter((g) => g.signs.length > 0);
 
   return (
     <div style={s.page}>
       <div style={s.topBar}>
-        <button style={s.backBtn} onClick={onBack}>← Back</button>
-        <div style={s.titleBlock}>
-          <div style={s.title}>Danger Sign Checklist</div>
-          <div style={s.subtitle}>WHO IMNCI Protocol</div>
+        <button style={s.backBtn} onClick={onBack}>← {ui.backToChecklist?.split("·")[0] || "Back"}</button>
+        <div>
+          <div style={{ fontSize: "17px", fontWeight: "700", color: "#f9fafb" }}>{ui.checklistTitle}</div>
+          <div style={{ fontSize: "12px", color: "#6b7280" }}>{ui.checklistSubtitle}</div>
         </div>
       </div>
 
       <div style={s.body}>
         {showVoice && (
-          <VoiceInput onTranscript={(text) => {
-            const matched = matchSymptoms(text);
-            if (matched.length > 0)
-              setSelected((prev) => [...new Set([...prev, ...matched])]);
-          }} />
+          <VoiceInput
+            langKey={langKey}
+            onTranscript={(text) => {
+              const matched = matchSymptoms(text);
+              if (matched.length > 0)
+                setSelected((prev) => [...new Set([...prev, ...matched])]);
+            }}
+          />
         )}
 
         <div style={s.selectedBar}>
           <span style={s.selectedText}>
-            {selected.length === 0 ? "No signs selected" : `${selected.length} sign${selected.length > 1 ? "s" : ""} selected`}
+            {selected.length === 0 ? ui.noSignsSelected : ui.signsSelected(selected.length)}
           </span>
           {selected.length > 0 && (
-            <button style={s.clearBtn} onClick={() => setSelected([])}>Clear all</button>
+            <button style={s.clearBtn} onClick={() => setSelected([])}>{ui.clearAll}</button>
           )}
         </div>
 
@@ -145,7 +156,7 @@ export default function ChecklistScreen({ onBack, onSubmit, showVoice = true }) 
           disabled={selected.length === 0}
           onClick={() => onSubmit(selected)}
         >
-          {selected.length > 0 ? `Assess Patient →` : "Select at least one sign"}
+          {selected.length > 0 ? ui.assessPatient : ui.selectAtLeastOne}
         </button>
       </div>
     </div>
