@@ -1,5 +1,7 @@
+import TriageScreen from "./components/TriageScreen";
+
 function App() {
-  return <div>ASHA Saathi</div>
+  return <TriageScreen />;
 }
 
-export default App
+export default App;
