@@ -2,6 +2,8 @@ import { useState } from "react";
 import { DANGER_SIGNS } from "../engine/dangerSigns";
 import { runTriage } from "../engine/triageEngine";
 import { rankQueue, createPatientRecord } from "../engine/priorityQueue";
+import { generateReferralReport } from "../engine/referralReport";
+import ReferralReport from "./ReferralReport";
 
 const TIER_COLORS = {
   RED: "#d32f2f",
@@ -13,7 +15,10 @@ export default function TriageScreen() {
   const [selectedSigns, setSelectedSigns] = useState([]);
   const [result, setResult] = useState(null);
   const [queue, setQueue] = useState([]);
-  const [view, setView] = useState("checklist"); // "checklist" | "result" | "queue"
+  const [view, setView] = useState("checklist"); // "checklist" | "result" | "queue" | "report"
+  const [age, setAge] = useState("");
+  const [sex, setSex] = useState("");
+  const [reportPatient, setReportPatient] = useState(null);
 
   function toggleSign(id) {
     setSelectedSigns((prev) =>
@@ -28,7 +33,7 @@ export default function TriageScreen() {
   }
 
   function handleAddToQueue() {
-    const record = createPatientRecord(result);
+    const record = createPatientRecord(result, { age, sex });
     setQueue((prev) => [...prev, record]);
     setView("queue");
   }
@@ -36,7 +41,15 @@ export default function TriageScreen() {
   function handleAddNextPatient() {
     setSelectedSigns([]);
     setResult(null);
+    setAge("");
+    setSex("");
     setView("checklist");
+  }
+
+  // ---- REPORT VIEW ----
+  if (view === "report") {
+    const report = generateReferralReport(reportPatient);
+    return <ReferralReport report={report} onBack={() => setView("queue")} />;
   }
 
   // ---- QUEUE VIEW ----
@@ -60,11 +73,27 @@ export default function TriageScreen() {
                 #{index + 1} — {p.tier}
               </strong>{" "}
               — {p.label}
+              {p.meta?.age || p.meta?.sex ? (
+                <span style={{ color: "#aaa" }}>
+                  {" "}
+                  ({[p.meta?.sex, p.meta?.age].filter(Boolean).join(", ")})
+                </span>
+              ) : null}
               <br />
               <small>
                 {new Date(p.timestamp).toLocaleTimeString()} ·{" "}
                 {p.citedSigns.map((s) => s.label).join(", ") || "No signs cited"}
               </small>
+              <br />
+              <button
+                onClick={() => {
+                  setReportPatient(p);
+                  setView("report");
+                }}
+                style={{ marginTop: "8px", padding: "6px 14px" }}
+              >
+                View Referral Report
+              </button>
             </div>
           ))}
         </div>
@@ -109,11 +138,28 @@ export default function TriageScreen() {
   return (
     <div style={{ padding: "24px" }}>
       <h1>ASHA Saathi — Select Observed Signs</h1>
+
       {queue.length > 0 && (
         <button onClick={() => setView("queue")} style={{ marginBottom: "16px", padding: "8px 16px" }}>
           View Queue ({queue.length})
         </button>
       )}
+
+      <div style={{ display: "flex", gap: "12px", marginBottom: "16px", maxWidth: "500px" }}>
+        <input
+          type="text"
+          placeholder="Age (e.g. 3 yrs)"
+          value={age}
+          onChange={(e) => setAge(e.target.value)}
+          style={{ padding: "8px", flex: 1 }}
+        />
+        <select value={sex} onChange={(e) => setSex(e.target.value)} style={{ padding: "8px", flex: 1 }}>
+          <option value="">Sex</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxWidth: "500px" }}>
         {DANGER_SIGNS.map((sign) => (
           <label
