@@ -9,7 +9,7 @@ const TIER_LABELS = {
   GREEN: "LOCAL MGMT",
 };
 
-export default function QueueScreen({ queue, onBack, onViewReport, onAddNext }) {
+export default function QueueScreen({ queue, onBack, onViewReport, onAddNext, onMarkReferred}) {
   const ranked = rankQueue(queue);
   const counts = { RED: 0, YELLOW: 0, GREEN: 0 };
   ranked.forEach((p) => counts[p.tier]++);
@@ -85,14 +85,23 @@ export default function QueueScreen({ queue, onBack, onViewReport, onAddNext }) 
             </div>
 
             <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={() => onViewReport(p)} style={{
+            <button onClick={() => onViewReport(p)} style={{
                 flex: 1, padding: "10px", borderRadius: "10px",
                 border: `1px solid ${TIER_COLORS[p.tier]}55`,
                 background: "transparent", color: TIER_COLORS[p.tier],
                 fontSize: "13px", fontWeight: "600", cursor: "pointer",
-              }}>
+            }}>
                 View Report
-              </button>
+            </button>
+            <button onClick={() => onMarkReferred(p.id)} style={{
+                flex: 1, padding: "10px", borderRadius: "10px",
+                border: `1px solid ${p.referred ? "#22c55e55" : "#37415155"}`,
+                background: p.referred ? "#052e16" : "transparent",
+                color: p.referred ? "#22c55e" : "#6b7280",
+                fontSize: "13px", fontWeight: "600", cursor: "pointer",
+            }}>
+                {p.referred ? "✓ Referred" : "Mark Referred"}
+            </button>
             </div>
           </div>
         ))}

@@ -37,6 +37,12 @@ export default function App() {
     setScreen("queue");
   }
 
+  function handleMarkReferred(patientId) {
+    setQueue((prev) =>
+      prev.map((p) => p.id === patientId ? { ...p, referred: true } : p)
+    );
+  }
+
   function handleAddNextPatient() {
     setPatientMeta({ name: "", age: "", sex: "" });
     setTriageResult(null);
@@ -51,6 +57,10 @@ export default function App() {
   if (screen === "home") return (
     <HomeScreen
       queueCount={queue.length}
+      redCount={queue.filter(p => p.tier === "RED").length}
+      yellowCount={queue.filter(p => p.tier === "YELLOW").length}
+      greenCount={queue.filter(p => p.tier === "GREEN").length}
+      referredCount={queue.filter(p => p.referred).length}
       onNewAssessment={() => setScreen("patientInfo")}
       onViewQueue={() => setScreen("queue")}
     />
@@ -92,14 +102,15 @@ export default function App() {
       />
     );
 
-  if (screen === "queue") return (
-    <QueueScreen
-      queue={queue}
-      onBack={() => setScreen("home")}
-      onViewReport={handleViewReport}
-      onAddNext={handleAddNextPatient}
-    />
-  );
+    if (screen === "queue") return (
+      <QueueScreen
+        queue={queue}
+        onBack={() => setScreen("home")}
+        onViewReport={handleViewReport}
+        onAddNext={handleAddNextPatient}
+        onMarkReferred={handleMarkReferred}
+      />
+    );
 
   if (screen === "report") return (
     <ReferralReport

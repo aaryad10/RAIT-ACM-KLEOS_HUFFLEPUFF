@@ -19,10 +19,10 @@ const s = {
     boxShadow: "0 0 6px #22c55e",
   },
   offlineText: { fontSize: "12px", color: "#22c55e", fontWeight: "500" },
-  body: { flex: 1, padding: "32px 24px", display: "flex", flexDirection: "column", gap: "14px" },
-  bigBtn: (bg, border) => ({
+  body: { flex: 1, padding: "24px 24px", display: "flex", flexDirection: "column", gap: "14px" },
+  bigBtn: (border) => ({
     width: "100%", padding: "22px 24px", borderRadius: "16px",
-    background: bg, border: `1px solid ${border}`,
+    background: "#0f172a", border: `1px solid ${border}`,
     display: "flex", alignItems: "center", gap: "16px",
     cursor: "pointer", textAlign: "left",
   }),
@@ -40,8 +40,9 @@ const s = {
   footerText: { fontSize: "12px", color: "#6b7280" },
 };
 
-export default function HomeScreen({ onNewAssessment, onViewQueue, queueCount }) {
+export default function HomeScreen({ onNewAssessment, onViewQueue, queueCount, redCount, yellowCount, greenCount, referredCount }) {
   const now = new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  const totalToday = redCount + yellowCount + greenCount;
 
   return (
     <div style={s.page}>
@@ -55,7 +56,40 @@ export default function HomeScreen({ onNewAssessment, onViewQueue, queueCount })
       </div>
 
       <div style={s.body}>
-        <button style={s.bigBtn("#0f172a", "#3b82f6")} onClick={onNewAssessment}>
+
+        {/* Session summary — only shows after first patient */}
+        {totalToday > 0 && (
+          <div style={{
+            background: "#111827", borderRadius: "14px",
+            border: "1px solid #1f2937", padding: "16px",
+          }}>
+            <div style={{
+              fontSize: "11px", fontWeight: "600", color: "#6b7280",
+              textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "12px",
+            }}>
+              Today's Session
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "8px" }}>
+              {[
+                { label: "RED", count: redCount, color: "#ef4444", bg: "#2d0a0a" },
+                { label: "YELLOW", count: yellowCount, color: "#f59e0b", bg: "#2d1a00" },
+                { label: "GREEN", count: greenCount, color: "#22c55e", bg: "#002d10" },
+                { label: "REFERRED", count: referredCount, color: "#3b82f6", bg: "#0f172a" },
+              ].map(({ label, count, color, bg }) => (
+                <div key={label} style={{
+                  background: bg, borderRadius: "10px", padding: "10px 8px",
+                  textAlign: "center", border: `1px solid ${color}33`,
+                }}>
+                  <div style={{ fontSize: "22px", fontWeight: "800", color }}>{count}</div>
+                  <div style={{ fontSize: "9px", color: "#6b7280", fontWeight: "600", marginTop: "2px", letterSpacing: "0.05em" }}>{label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Main action buttons */}
+        <button style={s.bigBtn("#3b82f6")} onClick={onNewAssessment}>
           <div style={s.btnIcon("#1d4ed8")}>➕</div>
           <div>
             <div style={s.btnTitle}>New Assessment</div>
@@ -63,13 +97,17 @@ export default function HomeScreen({ onNewAssessment, onViewQueue, queueCount })
           </div>
         </button>
 
-        <button style={s.bigBtn("#0f172a", "#f59e0b44")} onClick={onViewQueue}>
+        <button style={s.bigBtn("#f59e0b44")} onClick={onViewQueue}>
           <div style={s.btnIcon("#92400e")}>📋</div>
           <div>
             <div style={s.btnTitle}>
               Today's Queue
               {queueCount > 0 && (
-                <span style={{ marginLeft: "10px", background: "#f59e0b", color: "#000", borderRadius: "20px", padding: "2px 10px", fontSize: "13px", fontWeight: "700" }}>
+                <span style={{
+                  marginLeft: "10px", background: "#f59e0b",
+                  color: "#000", borderRadius: "20px", padding: "2px 10px",
+                  fontSize: "13px", fontWeight: "700",
+                }}>
                   {queueCount}
                 </span>
               )}
@@ -78,13 +116,14 @@ export default function HomeScreen({ onNewAssessment, onViewQueue, queueCount })
           </div>
         </button>
 
-        <button style={s.bigBtn("#0f172a", "#22c55e44")} onClick={() => {}}>
+        <button style={s.bigBtn("#22c55e44")} onClick={() => {}}>
           <div style={s.btnIcon("#14532d")}>📁</div>
           <div>
             <div style={s.btnTitle}>Referral History</div>
             <div style={s.btnSub}>Previous referrals stored locally</div>
           </div>
         </button>
+
       </div>
 
       <div style={s.footer}>
