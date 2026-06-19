@@ -9,7 +9,12 @@ export function generateReferralReport(patient) {
   return {
     reportTitle: "PHC REFERRAL NOTE",
     formatNote: "NHM-format community-level referral record",
-    patientSummary: `${patient.meta?.sex || "Patient"}${patient.meta?.age ? ", " + patient.meta.age : ""}`,
+    // patientSummary: `${patient.meta?.sex || "Patient"}${patient.meta?.age ? ", " + patient.meta.age : ""}`,
+    patientSummary: [
+        patient.meta?.name,
+        patient.meta?.sex,
+        patient.meta?.age
+        ].filter(Boolean).join(" · ") || "Patient",
     dateOfAssessment: dateStr,
     timeOfAssessment: timeStr,
     classification: patient.tier,
