@@ -10,6 +10,7 @@ import LanguageSelect     from "./components/LanguageSelect";
 import HomeScreen         from "./components/HomeScreen";
 import PatientInfoScreen  from "./components/PatientInfoScreen";
 import ChecklistScreen    from "./components/ChecklistScreen";
+import CaptureGuide       from "./components/CaptureGuide";
 import ResultScreen       from "./components/ResultScreen";
 import FamilyScreen       from "./components/FamilyScreen";
 import QueueScreen        from "./components/QueueScreen";
@@ -19,6 +20,8 @@ import { createPatientRecord } from "./engine/priorityQueue";
 import { generateReferralReport } from "./engine/referralReport";
 import ReferralRouter     from "./components/ReferralRouter";
 import { getLang }        from "./engine/languageConfig";
+import { getJaundiceSign, combineWithJaundiceSignal } from "./engine/jaundiceSignal";
+import jaundiceModelData  from "./assets/jaundice_model.json";
 
 export default function App() {
   // ── Language ─────────────────────────────────────────────────────────────────
@@ -26,13 +29,18 @@ export default function App() {
 
   // ── Navigation ───────────────────────────────────────────────────────────────
   const [screen, setScreen] = useState("home");
-  // screens: home | patient-info | checklist | result | family | queue | report
+  // screens: home | patient-info | checklist | eye-screening | result | family | queue | report
 
   // ── Patient data ─────────────────────────────────────────────────────────────
   const [patientMeta, setPatientMeta] = useState({ name: "", age: "", sex: "" });
-  const [triageResult, setTriageResult] = useState(null);
+  const [imnciResult, setImnciResult] = useState(null); // raw IMNCI checklist result, held until eye screening completes
+  const [triageResult, setTriageResult] = useState(null); // final combined result shown on ResultScreen
   const [queue, setQueue] = useState([]);
   const [reportPatient, setReportPatient] = useState(null);
+
+  // Jaundice model is a static ~1.3KB JSON asset, trained offline — loading it
+  // is synchronous, no network call, works fully offline.
+  const jaundiceModel = jaundiceModelData;
 
   // ── Derived stats for HomeScreen ─────────────────────────────────────────────
   const redCount      = queue.filter((p) => p.tier === "RED").length;
@@ -43,6 +51,7 @@ export default function App() {
   // ── Handlers ─────────────────────────────────────────────────────────────────
   function handleNewAssessment() {
     setPatientMeta({ name: "", age: "", sex: "" });
+    setImnciResult(null);
     setTriageResult(null);
     setScreen("patient-info");
   }
@@ -50,7 +59,16 @@ export default function App() {
   function handleChecklistSubmit(selectedSignIds, unmatchedNote) {
     const result = runTriage(selectedSignIds);
     if (unmatchedNote) setPatientMeta((prev) => ({ ...prev, unmatchedNote }));
-    setTriageResult(result);
+    // Eye screening is an OPTIONAL additional step — worker can skip it
+    // (CaptureGuide's onSkip) and the IMNCI result is used as-is.
+    setImnciResult(result);
+    setScreen("eye-screening");
+  }
+
+  function handleEyeCapture(captureResult) {
+    const jaundiceResult = getJaundiceSign(jaundiceModel, captureResult, langKey);
+    const combined = combineWithJaundiceSignal(imnciResult, jaundiceResult);
+    setTriageResult(combined);
     setScreen("result");
   }
 
@@ -123,6 +141,17 @@ export default function App() {
         onBack={() => setScreen("patient-info")}
         onSubmit={handleChecklistSubmit}
         showVoice={true}
+      />
+    );
+  }
+
+  if (screen === "eye-screening") {
+    return (
+      <CaptureGuide
+        langKey={langKey}
+        onCapture={handleEyeCapture}
+        onBack={() => setScreen("checklist")}
+        onSkip={() => { setTriageResult(imnciResult); setScreen("result"); }}
       />
     );
   }

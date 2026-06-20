@@ -1,0 +1,71 @@
+{
+  "model": {
+    "NONE": {
+      "bias": -2.842911916783554,
+      "coef": [
+        1.126959897856603,
+        0.6576170582855552,
+        0.07279170387374889,
+        -3.332688624650125
+      ]
+    },
+    "YELLOW": {
+      "bias": -1.3574713032087065,
+      "coef": [
+        -1.837645427252538,
+        -1.4833754323541364,
+        0.46749350134107204,
+        -0.20019358099127843
+      ]
+    },
+    "RED": {
+      "bias": -0.36553585790388343,
+      "coef": [
+        0.41910649155410873,
+        0.06384198927095061,
+        -0.7790654815795045,
+        3.929746120012883
+      ]
+    }
+  },
+  "classes": [
+    "NONE",
+    "YELLOW",
+    "RED"
+  ],
+  "featureNames": [
+    "hueDiff",
+    "satDelta",
+    "lightnessRatio",
+    "yellownessIndex"
+  ],
+  "standardization": {
+    "mean": [
+      -58.717709558823586,
+      13.252489705882347,
+      0.9305580147058832,
+      0.2805733088235296
+    ],
+    "std": [
+      76.2596122303622,
+      19.868883326955956,
+      0.10520040760041718,
+      0.19837019170404344
+    ]
+  },
+  "trainedAt": 1781932508372,
+  "sampleCount": 1360,
+  "meta": {
+    "accuracy": 82.92,
+    "testSetSize": 240,
+    "trainSetSize": 1360,
+    "dataSource": "synthetic-procedural",
+    "dataDisclosure": "Training data generated procedurally in HSL color-space, grounded in published clinical thresholds for scleral icterus (visible >3mg/dL bilirubin; hue/blue-chromaticity correlation with TSB per published neonatal jaundice screening literature). No real patient images used. Classifier operates on extracted color features (hue deviation, saturation delta, lightness ratio, yellowness index), not raw images.",
+    "version": "1.0.0",
+    "classes": [
+      "NONE",
+      "YELLOW",
+      "RED"
+    ]
+  }
+}

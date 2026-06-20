@@ -24,6 +24,9 @@ export function generateReferralReport(patient) {
     classificationLabel: patient.label,
     referralTimeframe: patient.referralTimeframe,
     observedDangerSigns: patient.citedSigns.map((s) => s.label),
+    // Eye-screening (jaundice) result, if the worker ran or skipped that step.
+    // null when eye screening was never attempted (e.g. worker skipped CaptureGuide).
+    eyeScreening: patient.eyeScreening || null,
     // Symptoms noted by the worker that don't map to IMNCI danger signs.
     // Included for the doctor's awareness — NOT used for triage classification.
     additionalObservations: patient.meta?.unmatchedNote || null,

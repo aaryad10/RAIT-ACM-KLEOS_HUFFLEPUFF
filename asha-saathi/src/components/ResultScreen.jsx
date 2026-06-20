@@ -77,6 +77,31 @@ export default function ResultScreen({ langKey = "hi", result, patientMeta, onAd
         <div style={{ fontSize: "11px", color: "#4b5563", textAlign: "center", marginBottom: "24px" }}>
           WHO IMNCI · MoHFW ASHA Module
         </div>
+
+        {result.eyeScreening && (
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{ fontSize: "11px", fontWeight: "600", color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "12px" }}>
+              Eye Screening (Jaundice)
+            </div>
+            <div style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              padding: "12px 14px", borderRadius: "10px",
+              background: surface, border: `1px solid ${color}33`,
+            }}>
+              <div style={{ width: "8px", height: "8px", borderRadius: "50%", flexShrink: 0, background: result.eyeScreening.success ? TIER_COLORS[result.eyeScreening.tier] : "#6b7280" }} />
+              <span style={{ fontSize: "15px", color: "#f9fafb", flex: 1 }}>
+                {result.eyeScreening.success
+                  ? result.eyeScreening.sign?.label || `Tier: ${result.eyeScreening.tier}`
+                  : "Eye photo not clear enough to read — try retaking, or rely on checklist"}
+              </span>
+              {result.eyeScreening.success && (
+                <span style={{ fontSize: "12px", color: "#9ca3af", flexShrink: 0 }}>
+                  {Math.round(result.eyeScreening.confidence * 100)}%
+                </span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Actions */}

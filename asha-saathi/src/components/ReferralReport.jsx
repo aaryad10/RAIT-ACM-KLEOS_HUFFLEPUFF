@@ -102,6 +102,31 @@ export default function ReferralReport({ report, onBack, patientMeta }) {
               }
             </div>
 
+            {/* Eye screening (jaundice) — separate from IMNCI checklist signs */}
+            {report.eyeScreening && (
+              <div style={{
+                background: "#1a1f2e", borderRadius: "10px", padding: "14px",
+                border: "1px solid #3b82f633",
+              }}>
+                <div style={{ fontSize: "10px", fontWeight: "600", color: "#60a5fa", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px" }}>
+                  Eye Screening (Jaundice)
+                </div>
+                <div style={{ fontSize: "13px", color: "#d1d5db", lineHeight: "1.5" }}>
+                  {report.eyeScreening.success
+                    ? (report.eyeScreening.sign?.label || `Tier: ${report.eyeScreening.tier}`)
+                    : "Attempted — photo not clear enough to read"}
+                </div>
+                {report.eyeScreening.success && (
+                  <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "6px" }}>
+                    Confidence: {Math.round(report.eyeScreening.confidence * 100)}%
+                  </div>
+                )}
+                <div style={{ fontSize: "11px", color: "#6b7280", marginTop: "8px" }}>
+                  ⚠ Screening signal only — not a diagnosis. For clinical evaluation only.
+                </div>
+              </div>
+            )}
+
             {/* Additional observations — non-IMNCI symptoms the worker noted */}
             {report.additionalObservations && (
               <div style={{

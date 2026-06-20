@@ -133,6 +133,7 @@ export function createPatientRecord(triageResult, meta = {}) {
     label: triageResult.label,
     referralTimeframe: triageResult.referralTimeframe,
     citedSigns: triageResult.citedSigns,
+    eyeScreening: triageResult.eyeScreening || null,
     timestamp: Date.now(),
     referred: false,
     meta: {
