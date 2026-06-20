@@ -17,6 +17,7 @@ import ReferralReport     from "./components/ReferralReport";
 import { runTriage }      from "./engine/triageEngine";
 import { createPatientRecord } from "./engine/priorityQueue";
 import { generateReferralReport } from "./engine/referralReport";
+import ReferralRouter     from "./components/ReferralRouter";
 import { getLang }        from "./engine/languageConfig";
 
 export default function App() {
@@ -56,7 +57,16 @@ export default function App() {
   function handleAddToQueue() {
     const record = createPatientRecord(triageResult, patientMeta);
     setQueue((prev) => [...prev, record]);
-    setScreen("family");
+    setScreen("referral-router");
+  }
+
+  function handleToggleRepeatVisit(patientId) {
+    setQueue((prev) =>
+      prev.map((p) => p.id === patientId
+        ? { ...p, meta: { ...p.meta, isRepeatVisit: !p.meta?.isRepeatVisit } }
+        : p
+      )
+    );
   }
 
   function handleMarkReferred(patientId) {
@@ -150,6 +160,22 @@ export default function App() {
         onViewReport={handleViewReport}
         onAddNext={handleNewAssessment}
         onMarkReferred={handleMarkReferred}
+        onToggleRepeatVisit={handleToggleRepeatVisit}
+      />
+    );
+  }
+
+  if (screen === "referral-router") {
+    return (
+      <ReferralRouter
+        tier={triageResult?.tier}
+        patientMeta={patientMeta}
+        onBack={() => setScreen("result")}
+        onConfirm={(facility) => {
+          const record = createPatientRecord(triageResult, { ...patientMeta, recommendedFacility: facility.name });
+          setQueue((prev) => [...prev, record]);
+          setScreen("family");
+        }}
       />
     );
   }
