@@ -12,7 +12,6 @@ const CATEGORY_KEYS = [
   "diarrhea", "nutrition", "ear", "infant",
 ];
 
-// English category display names (fallback — ideally move these to languageConfig too)
 const CATEGORY_LABELS = {
   general:     "General Danger Signs",
   respiratory: "Breathing",
@@ -22,6 +21,18 @@ const CATEGORY_LABELS = {
   nutrition:   "Nutrition",
   ear:         "Ear",
   infant:      "Infant (0–12 months)",
+};
+
+// Unmatched symptom note — shown when voice heard something but nothing matched
+const UNMATCHED_NOTE = {
+  hi: { label: "अन्य लक्षण (यादी में नहीं)", placeholder: "जो लक्षण ऊपर नहीं मिला वो यहाँ लिखें..." },
+  mr: { label: "इतर लक्षणे (यादीत नाही)", placeholder: "वरील यादीत न मिळालेले लक्षण येथे लिहा..." },
+  ta: { label: "மற்ற அறிகுறிகள் (பட்டியலில் இல்லை)", placeholder: "பட்டியலில் இல்லாத அறிகுறியை இங்கே எழுதுங்கள்..." },
+  te: { label: "ఇతర లక్షణాలు (జాబితాలో లేవు)", placeholder: "జాబితాలో లేని లక్షణాన్ని ఇక్కడ రాయండి..." },
+  kn: { label: "ಇತರ ಚಿಹ್ನೆಗಳು (ಪಟ್ಟಿಯಲ್ಲಿ ಇಲ್ಲ)", placeholder: "ಪಟ್ಟಿಯಲ್ಲಿ ಇಲ್ಲದ ಚಿಹ್ನೆ ಇಲ್ಲಿ ಬರೆಯಿರಿ..." },
+  bn: { label: "অন্যান্য উপসর্গ (তালিকায় নেই)", placeholder: "তালিকায় না থাকা উপসর্গ এখানে লিখুন..." },
+  gu: { label: "અન્ય ચિહ્નો (યાદીમાં નથી)", placeholder: "યાદીમાં ન મળ્યું તે ચિહ્ન અહીં લખો..." },
+  en: { label: "Other symptoms (not in list)", placeholder: "Note any symptom not found above..." },
 };
 
 const s = {
@@ -67,6 +78,25 @@ const s = {
   checkbox: (tier) => ({
     width: "20px", height: "20px", accentColor: TIER_COLORS[tier], flexShrink: 0,
   }),
+  unmatchedBox: {
+    marginTop: "24px", padding: "16px", borderRadius: "12px",
+    background: "#111827", border: "1px solid #374151",
+  },
+  unmatchedLabel: {
+    fontSize: "11px", fontWeight: "600", color: "#6b7280",
+    textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "8px",
+  },
+  unmatchedHint: {
+    fontSize: "12px", color: "#f59e0b", marginBottom: "10px",
+    display: "flex", alignItems: "center", gap: "6px",
+  },
+  unmatchedInput: {
+    width: "100%", padding: "12px 14px", borderRadius: "10px",
+    border: "1px solid #374151", background: "#0a0f1e",
+    color: "#f9fafb", fontSize: "14px", outline: "none",
+    resize: "vertical", minHeight: "60px", boxSizing: "border-box",
+    fontFamily: "inherit",
+  },
   bottomBar: {
     position: "fixed", bottom: 0, left: 0, right: 0,
     padding: "16px 24px", background: "#0a0f1e",
@@ -83,20 +113,41 @@ const s = {
 };
 
 export default function ChecklistScreen({ langKey = "hi", onBack, onSubmit, showVoice = true }) {
-  const [selected, setSelected] = useState([]);
-  const ui = getLang(langKey).ui;
+  const [selected, setSelected]           = useState([]);
+  const [unmatchedNote, setUnmatchedNote] = useState("");
+  const [lastTranscript, setLastTranscript] = useState("");
+  const [voiceMatchedNothing, setVoiceMatchedNothing] = useState(false);
 
-  // Get danger signs with labels in the correct language
+  const ui = getLang(langKey).ui;
   const DANGER_SIGNS = getDangerSigns(langKey);
+  const noteStrings = UNMATCHED_NOTE[langKey] || UNMATCHED_NOTE.en;
 
   function toggle(id) {
     setSelected((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]);
+  }
+
+  function handleTranscript(text) {
+    setLastTranscript(text);
+    const matched = matchSymptoms(text);
+    if (matched.length > 0) {
+      setSelected((prev) => [...new Set([...prev, ...matched])]);
+      setVoiceMatchedNothing(false);
+    } else {
+      // Voice heard something but nothing matched IMNCI list
+      setVoiceMatchedNothing(true);
+      // Pre-fill the unmatched note with the raw transcript so worker can edit it
+      if (text && text.trim()) {
+        setUnmatchedNote((prev) => prev ? prev + "; " + text.trim() : text.trim());
+      }
+    }
   }
 
   const grouped = CATEGORY_KEYS.map((cat) => ({
     label: CATEGORY_LABELS[cat],
     signs: DANGER_SIGNS.filter((s) => s.category === cat),
   })).filter((g) => g.signs.length > 0);
+
+  const canAssess = selected.length > 0 || unmatchedNote.trim().length > 0;
 
   return (
     <div style={s.page}>
@@ -112,11 +163,7 @@ export default function ChecklistScreen({ langKey = "hi", onBack, onSubmit, show
         {showVoice && (
           <VoiceInput
             langKey={langKey}
-            onTranscript={(text) => {
-              const matched = matchSymptoms(text);
-              if (matched.length > 0)
-                setSelected((prev) => [...new Set([...prev, ...matched])]);
-            }}
+            onTranscript={handleTranscript}
           />
         )}
 
@@ -125,7 +172,9 @@ export default function ChecklistScreen({ langKey = "hi", onBack, onSubmit, show
             {selected.length === 0 ? ui.noSignsSelected : ui.signsSelected(selected.length)}
           </span>
           {selected.length > 0 && (
-            <button style={s.clearBtn} onClick={() => setSelected([])}>{ui.clearAll}</button>
+            <button style={s.clearBtn} onClick={() => { setSelected([]); setVoiceMatchedNothing(false); }}>
+              {ui.clearAll}
+            </button>
           )}
         </div>
 
@@ -148,15 +197,35 @@ export default function ChecklistScreen({ langKey = "hi", onBack, onSubmit, show
             </div>
           </div>
         ))}
+
+        {/* Unmatched symptom note box */}
+        <div style={s.unmatchedBox}>
+          <div style={s.unmatchedLabel}>{noteStrings.label}</div>
+          {voiceMatchedNothing && (
+            <div style={s.unmatchedHint}>
+              ⚠️ <span style={{ fontSize: "12px" }}>
+                {langKey === "hi" ? "आवाज़ में लक्षण IMNCI सूची में नहीं मिला — नीचे नोट करें"
+                 : langKey === "mr" ? "आवाजातील लक्षण यादीत नाही — खाली नोंद करा"
+                 : "Voice symptom not in IMNCI list — note it below"}
+              </span>
+            </div>
+          )}
+          <textarea
+            style={s.unmatchedInput}
+            placeholder={noteStrings.placeholder}
+            value={unmatchedNote}
+            onChange={(e) => setUnmatchedNote(e.target.value)}
+          />
+        </div>
       </div>
 
       <div style={s.bottomBar}>
         <button
-          style={s.assessBtn(selected.length > 0)}
-          disabled={selected.length === 0}
-          onClick={() => onSubmit(selected)}
+          style={s.assessBtn(canAssess)}
+          disabled={!canAssess}
+          onClick={() => onSubmit(selected, unmatchedNote.trim())}
         >
-          {selected.length > 0 ? ui.assessPatient : ui.selectAtLeastOne}
+          {canAssess ? ui.assessPatient : ui.selectAtLeastOne}
         </button>
       </div>
     </div>

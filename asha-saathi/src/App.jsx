@@ -46,8 +46,9 @@ export default function App() {
     setScreen("patient-info");
   }
 
-  function handleChecklistSubmit(selectedSignIds) {
+  function handleChecklistSubmit(selectedSignIds, unmatchedNote) {
     const result = runTriage(selectedSignIds);
+    if (unmatchedNote) setPatientMeta((prev) => ({ ...prev, unmatchedNote }));
     setTriageResult(result);
     setScreen("result");
   }
